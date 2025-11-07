@@ -2,6 +2,8 @@
 
 A real-time collaborative task management web application built with React 18, Vite, and Firebase.
 
+🚀 **Live Demo**: [https://tasksync-0711.web.app](https://tasksync-0711.web.app)
+
 ## Features
 
 - 🔐 **Authentication** - Email/password signup and login with Firebase Authentication
