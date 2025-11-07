@@ -7,10 +7,11 @@ import { Activity, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'luc
 const ActivityFeed = ({ listId }) => {
   const [activities, setActivities] = useState([]);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [myActivitiesPage, setMyActivitiesPage] = useState(1);
+  const [collaboratorsPage, setCollaboratorsPage] = useState(1);
   const { currentUser } = useAuth();
   
-  const ITEMS_PER_PAGE = 10;
+  const ITEMS_PER_PAGE = 5;
 
   useEffect(() => {
     if (!listId) return;
@@ -90,43 +91,41 @@ const ActivityFeed = ({ listId }) => {
 
   const { myActivities, othersActivities } = categorizeActivities();
 
-  // Pagination logic
-  const totalActivities = activities.length;
-  const totalPages = Math.ceil(totalActivities / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
-  const paginatedActivities = activities.slice(startIndex, endIndex);
+  // Pagination for My Activities
+  const totalMyActivities = myActivities.length;
+  const totalMyPages = Math.ceil(totalMyActivities / ITEMS_PER_PAGE);
+  const myStartIndex = (myActivitiesPage - 1) * ITEMS_PER_PAGE;
+  const myEndIndex = myStartIndex + ITEMS_PER_PAGE;
+  const paginatedMyActivities = myActivities.slice(myStartIndex, myEndIndex);
 
-  // Categorize paginated activities
-  const categorizePaginatedActivities = () => {
-    const userName = currentUser?.name || currentUser?.displayName || 'User';
-    
-    const myActivities = [];
-    const othersActivities = [];
-    
-    paginatedActivities.forEach(activity => {
-      const activityText = activity.message || activity.details || '';
-      if (activityText && userName && (activityText.startsWith(userName) || activityText.startsWith('You'))) {
-        myActivities.push(activity);
-      } else {
-        othersActivities.push(activity);
-      }
-    });
-    
-    return { myActivities, othersActivities };
-  };
+  // Pagination for Collaborators Activities
+  const totalCollaboratorsActivities = othersActivities.length;
+  const totalCollaboratorsPages = Math.ceil(totalCollaboratorsActivities / ITEMS_PER_PAGE);
+  const collaboratorsStartIndex = (collaboratorsPage - 1) * ITEMS_PER_PAGE;
+  const collaboratorsEndIndex = collaboratorsStartIndex + ITEMS_PER_PAGE;
+  const paginatedCollaboratorsActivities = othersActivities.slice(collaboratorsStartIndex, collaboratorsEndIndex);
 
-  const { myActivities: paginatedMyActivities, othersActivities: paginatedOthersActivities } = categorizePaginatedActivities();
-
-  const handlePrevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
+  const handleMyPrevPage = () => {
+    if (myActivitiesPage > 1) {
+      setMyActivitiesPage(myActivitiesPage - 1);
     }
   };
 
-  const handleNextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
+  const handleMyNextPage = () => {
+    if (myActivitiesPage < totalMyPages) {
+      setMyActivitiesPage(myActivitiesPage + 1);
+    }
+  };
+
+  const handleCollaboratorsPrevPage = () => {
+    if (collaboratorsPage > 1) {
+      setCollaboratorsPage(collaboratorsPage - 1);
+    }
+  };
+
+  const handleCollaboratorsNextPage = () => {
+    if (collaboratorsPage < totalCollaboratorsPages) {
+      setCollaboratorsPage(collaboratorsPage + 1);
     }
   };
 
@@ -152,97 +151,143 @@ const ActivityFeed = ({ listId }) => {
 
       {isExpanded && (
         <div className="p-4 pt-0">
-          <div className="max-h-96 overflow-y-auto">
-            {activities.length === 0 ? (
-              <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No activity yet</p>
-            ) : (
-              <div className="space-y-4">
-                {paginatedMyActivities.length > 0 && (
-                  <div>
-                    <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">
-                      My Activity
-                    </h4>
-                    <div className="space-y-3">
-                      {paginatedMyActivities.map((activity) => (
-                        <div key={activity.id} className="flex items-start space-x-3 text-sm">
-                          <div className="w-2 h-2 mt-2 rounded-full bg-primary-600 flex-shrink-0" />
-                          <div className="flex-1">
-                            <p className="text-gray-700 dark:text-gray-300">
-                              {formatMessage(activity.message || activity.details || 'Activity')}
-                            </p>
-                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                              {formatTime(activity.timestamp)}
-                            </p>
-                          </div>
+          {activities.length === 0 ? (
+            <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No activity yet</p>
+          ) : (
+            <div className="space-y-6">
+              {/* My Activities Section */}
+              {myActivities.length > 0 && (
+                <div className="border-b border-gray-200 dark:border-gray-700 pb-4">
+                  <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-3 flex items-center justify-between">
+                    <span>My Activity</span>
+                    <span className="text-xs bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 px-2 py-0.5 rounded-full font-normal">
+                      {totalMyActivities}
+                    </span>
+                  </h4>
+                  <div className="space-y-3 max-h-64 overflow-y-auto">
+                    {paginatedMyActivities.map((activity) => (
+                      <div key={activity.id} className="flex items-start space-x-3 text-sm">
+                        <div className="w-2 h-2 mt-2 rounded-full bg-primary-600 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-gray-700 dark:text-gray-300">
+                            {formatMessage(activity.message || activity.details || 'Activity')}
+                          </p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                            {formatTime(activity.timestamp)}
+                          </p>
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    ))}
                   </div>
-                )}
+                  
+                  {/* My Activities Pagination */}
+                  {totalMyPages > 1 && (
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        {myStartIndex + 1}-{Math.min(myEndIndex, totalMyActivities)} of {totalMyActivities}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={handleMyPrevPage}
+                          disabled={myActivitiesPage === 1}
+                          className={`p-1 rounded transition-colors ${
+                            myActivitiesPage === 1
+                              ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                          }`}
+                          title="Previous"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        
+                        <span className="text-xs text-gray-600 dark:text-gray-400">
+                          {myActivitiesPage}/{totalMyPages}
+                        </span>
+                        
+                        <button
+                          onClick={handleMyNextPage}
+                          disabled={myActivitiesPage === totalMyPages}
+                          className={`p-1 rounded transition-colors ${
+                            myActivitiesPage === totalMyPages
+                              ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                          }`}
+                          title="Next"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
-                {paginatedOthersActivities.length > 0 && (
-                  <div>
-                    <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">
-                      Collaborators
-                    </h4>
-                    <div className="space-y-3">
-                      {paginatedOthersActivities.map((activity) => (
-                        <div key={activity.id} className="flex items-start space-x-3 text-sm">
-                          <div className="w-2 h-2 mt-2 rounded-full bg-green-600 flex-shrink-0" />
-                          <div className="flex-1">
-                            <p className="text-gray-700 dark:text-gray-300">
-                              {formatMessage(activity.message || activity.details || 'Activity')}
-                            </p>
-                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                              {formatTime(activity.timestamp)}
-                            </p>
-                          </div>
+              {/* Collaborators Activities Section */}
+              {othersActivities.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-3 flex items-center justify-between">
+                    <span>Collaborators</span>
+                    <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full font-normal">
+                      {totalCollaboratorsActivities}
+                    </span>
+                  </h4>
+                  <div className="space-y-3 max-h-64 overflow-y-auto">
+                    {paginatedCollaboratorsActivities.map((activity) => (
+                      <div key={activity.id} className="flex items-start space-x-3 text-sm">
+                        <div className="w-2 h-2 mt-2 rounded-full bg-green-600 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-gray-700 dark:text-gray-300">
+                            {formatMessage(activity.message || activity.details || 'Activity')}
+                          </p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                            {formatTime(activity.timestamp)}
+                          </p>
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    ))}
                   </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Pagination Controls */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <div className="text-xs text-gray-500 dark:text-gray-400">
-                Showing {startIndex + 1}-{Math.min(endIndex, totalActivities)} of {totalActivities}
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handlePrevPage}
-                  disabled={currentPage === 1}
-                  className={`p-1 rounded transition-colors ${
-                    currentPage === 1
-                      ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
-                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-                  }`}
-                  title="Previous page"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                
-                <span className="text-sm text-gray-600 dark:text-gray-400">
-                  Page {currentPage} of {totalPages}
-                </span>
-                
-                <button
-                  onClick={handleNextPage}
-                  disabled={currentPage === totalPages}
-                  className={`p-1 rounded transition-colors ${
-                    currentPage === totalPages
-                      ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
-                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-                  }`}
-                  title="Next page"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              </div>
+                  
+                  {/* Collaborators Pagination */}
+                  {totalCollaboratorsPages > 1 && (
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        {collaboratorsStartIndex + 1}-{Math.min(collaboratorsEndIndex, totalCollaboratorsActivities)} of {totalCollaboratorsActivities}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={handleCollaboratorsPrevPage}
+                          disabled={collaboratorsPage === 1}
+                          className={`p-1 rounded transition-colors ${
+                            collaboratorsPage === 1
+                              ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                          }`}
+                          title="Previous"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        
+                        <span className="text-xs text-gray-600 dark:text-gray-400">
+                          {collaboratorsPage}/{totalCollaboratorsPages}
+                        </span>
+                        
+                        <button
+                          onClick={handleCollaboratorsNextPage}
+                          disabled={collaboratorsPage === totalCollaboratorsPages}
+                          className={`p-1 rounded transition-colors ${
+                            collaboratorsPage === totalCollaboratorsPages
+                              ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                          }`}
+                          title="Next"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
