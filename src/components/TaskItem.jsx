@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { doc, updateDoc, deleteDoc, addDoc, collection } from 'firebase/firestore';
 import { db } from '../services/firebaseConfig';
 import { useAuth } from '../context/AuthContext';
-import { CheckCircle2, Circle, Trash2, Edit2, Save, X, Plus, ChevronDown, ChevronRight } from 'lucide-react';
+import { CheckCircle2, Circle, Trash2, Edit2, Save, X, Plus, ChevronDown, ChevronRight, PlayCircle, ClipboardCheck } from 'lucide-react';
 
 const TaskItem = ({ task, listId }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -22,7 +22,14 @@ const TaskItem = ({ task, listId }) => {
   const toggleStatus = async () => {
     try {
       const taskRef = doc(db, 'tasks', task.id);
-      const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+      // Cycle through statuses: pending -> in-progress -> review -> completed -> pending
+      const statusCycle = {
+        'pending': 'in-progress',
+        'in-progress': 'review',
+        'review': 'completed',
+        'completed': 'pending'
+      };
+      const newStatus = statusCycle[task.status] || 'in-progress';
       
       await updateDoc(taskRef, {
         status: newStatus
@@ -30,7 +37,7 @@ const TaskItem = ({ task, listId }) => {
 
       await addDoc(collection(db, 'activities'), {
         listId: listId,
-        message: `${userName} marked "${task.title}" as ${newStatus}`,
+        message: `${userName} changed "${task.title}" status to ${newStatus}`,
         timestamp: new Date().toISOString()
       });
     } catch (error) {
@@ -146,10 +153,44 @@ const TaskItem = ({ task, listId }) => {
 
   const completedSubtasksCount = subtasks.filter(st => st.completed).length;
 
+  // Helper function to get status icon and color
+  const getStatusDisplay = (status) => {
+    switch (status) {
+      case 'completed':
+        return { 
+          icon: <CheckCircle2 className="w-6 h-6" />, 
+          color: 'text-green-500',
+          borderColor: 'border-green-500',
+          label: 'Completed'
+        };
+      case 'review':
+        return { 
+          icon: <ClipboardCheck className="w-6 h-6" />, 
+          color: 'text-purple-500',
+          borderColor: 'border-purple-500',
+          label: 'In Review'
+        };
+      case 'in-progress':
+        return { 
+          icon: <PlayCircle className="w-6 h-6" />, 
+          color: 'text-blue-500',
+          borderColor: 'border-blue-500',
+          label: 'In Progress'
+        };
+      default: // pending
+        return { 
+          icon: <Circle className="w-6 h-6" />, 
+          color: 'text-gray-400 hover:text-primary-500',
+          borderColor: 'border-primary-500',
+          label: 'Pending'
+        };
+    }
+  };
+
+  const statusDisplay = getStatusDisplay(task.status);
+
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 border-l-4 ${
-      task.status === 'completed' ? 'border-green-500' : 'border-primary-500'
-    }`}>
+    <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 border-l-4 ${statusDisplay.borderColor}`}>
       {isEditing ? (
         <div className="space-y-3">
           <input
@@ -186,22 +227,35 @@ const TaskItem = ({ task, listId }) => {
       ) : (
         <div className="flex items-start justify-between">
           <div className="flex items-start space-x-3 flex-1">
-            <button onClick={toggleStatus} className="mt-1">
-              {task.status === 'completed' ? (
-                <CheckCircle2 className="w-6 h-6 text-green-500" />
-              ) : (
-                <Circle className="w-6 h-6 text-gray-400 hover:text-primary-500" />
-              )}
+            <button 
+              onClick={toggleStatus} 
+              className={`mt-1 ${statusDisplay.color}`}
+              title={`Click to change status (Current: ${statusDisplay.label})`}
+            >
+              {statusDisplay.icon}
             </button>
             
             <div className="flex-1">
-              <h3 className={`font-medium ${
-                task.status === 'completed' 
-                  ? 'line-through text-gray-500 dark:text-gray-400' 
-                  : 'text-gray-900 dark:text-white'
-              }`}>
-                {task.title}
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className={`font-medium ${
+                  task.status === 'completed' 
+                    ? 'line-through text-gray-500 dark:text-gray-400' 
+                    : 'text-gray-900 dark:text-white'
+                }`}>
+                  {task.title}
+                </h3>
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                  task.status === 'completed' 
+                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                    : task.status === 'review'
+                    ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+                    : task.status === 'in-progress'
+                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                    : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-400'
+                }`}>
+                  {statusDisplay.label}
+                </span>
+              </div>
               {task.description && (
                 <p className={`text-sm mt-1 ${
                   task.status === 'completed' 
